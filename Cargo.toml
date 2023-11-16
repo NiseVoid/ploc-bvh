@@ -1,0 +1,38 @@
+[package]
+name = "ploc-bvh"
+version = "0.0.1"
+description = "A Bounding Volume Hierarchy based on PLOC"
+readme = "README.md"
+keywords = [
+    "bvh",
+    "aabb",
+    "bounding",
+    "volume",
+    "ploc",
+]
+categories = ["data-structures", "game-development"]
+
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/NiseVoid/ploc-bvh"
+
+edition = "2021"
+
+[dependencies]
+bevy_math = "0.12"
+radsort = "0.1"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
+panic = "abort"
+
+[dev-dependencies]
+fastrand = "1.9"
+criterion = { version = "0.5", default-features = false, features = [
+  "cargo_bench_support",
+] }
+
+[[bench]]
+name = "build"
+harness = false
