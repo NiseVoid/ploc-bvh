@@ -1,13 +1,13 @@
 use crate::search::{find_best_node, FindCache};
-use crate::{Aabb, Bvh, BvhItem, BvhNode, Dim, Pos};
+use crate::{Bvh, BvhItem, BvhNode, BvhVolume};
 
 use std::collections::VecDeque;
 
 const TRAVERSE_COST: f32 = 1.5;
 
-impl<D: Dim, T: Copy + std::fmt::Debug> Bvh<D, T> {
+impl<Volume: BvhVolume, T: Copy + std::fmt::Debug> Bvh<Volume, T> {
     /// Construct a BVH from a size and iterator
-    pub fn new(n: usize, iter: impl IntoIterator<Item = (T, impl Into<D::Aabb>)>) -> Self {
+    pub fn new(n: usize, iter: impl IntoIterator<Item = (T, impl Into<Volume>)>) -> Self {
         if n == 0 {
             return Self::default();
         }
@@ -15,23 +15,23 @@ impl<D: Dim, T: Copy + std::fmt::Debug> Bvh<D, T> {
         let mut current_nodes = Vec::with_capacity(n);
         let mut items = Vec::with_capacity(n);
 
-        for (i, (t, aabb)) in iter.into_iter().enumerate() {
-            let aabb = aabb.into();
+        for (i, (t, volume)) in iter.into_iter().enumerate() {
+            let volume = volume.into();
             current_nodes.push(BvhNode {
-                aabb,
+                volume: volume.clone(),
                 count: 1,
                 start_index: i as u32,
             });
-            items.push(BvhItem { aabb, t });
+            items.push(BvhItem { volume, t });
         }
 
-        radsort::sort_by_cached_key(&mut current_nodes, |node: &BvhNode<D>| {
-            node.aabb.center().code()
+        radsort::sort_by_cached_key(&mut current_nodes, |node: &BvhNode<Volume>| {
+            node.volume.morton_code()
         });
 
         let mut nodes = vec![
             BvhNode {
-                aabb: D::Aabb::INFINITY,
+                volume: Volume::INFINITY,
                 count: 0,
                 start_index: u32::MAX,
             };
@@ -52,7 +52,7 @@ impl<D: Dim, T: Copy + std::fmt::Debug> Bvh<D, T> {
 
             for (index, best) in merge.iter().enumerate() {
                 if merge[*best] != index {
-                    next_nodes.push(current_nodes[index]);
+                    next_nodes.push(current_nodes[index].clone());
                     continue;
                 }
 
@@ -62,13 +62,13 @@ impl<D: Dim, T: Copy + std::fmt::Debug> Bvh<D, T> {
 
                 let left = &current_nodes[index];
                 let right = &current_nodes[*best];
-                let parent_aabb = left.aabb.merge(&right.aabb);
+                let parent_aabb = left.volume.merge(&right.volume);
 
                 insert_index -= 2;
-                nodes[insert_index] = current_nodes[index];
-                nodes[insert_index + 1] = current_nodes[*best];
+                nodes[insert_index] = current_nodes[index].clone();
+                nodes[insert_index + 1] = current_nodes[*best].clone();
                 next_nodes.push(BvhNode {
-                    aabb: parent_aabb,
+                    volume: parent_aabb,
                     count: 0,
                     start_index: insert_index as u32,
                 });
@@ -80,7 +80,7 @@ impl<D: Dim, T: Copy + std::fmt::Debug> Bvh<D, T> {
         }
 
         insert_index -= 1;
-        nodes[insert_index] = current_nodes[0];
+        nodes[insert_index] = current_nodes[0].clone();
 
         // TODO: We shouldn't make a new vec of this yet
         let mut nodes = nodes[insert_index..].to_vec();
@@ -98,7 +98,7 @@ impl<D: Dim, T: Copy + std::fmt::Debug> Bvh<D, T> {
                 continue;
             }
 
-            items.push(unordered_items[node.start_index as usize]);
+            items.push(unordered_items[node.start_index as usize].clone());
             node.start_index = items.len() as u32 - 1;
         }
 
@@ -129,14 +129,16 @@ impl<D: Dim, T: Copy + std::fmt::Debug> Bvh<D, T> {
                 }
 
                 // Check the Surface Area Heuristic
-                if ((left.count + right.count) as f32 - TRAVERSE_COST) * parent.aabb.area()
-                    < left.count as f32 * left.aabb.area() + right.count as f32 * right.aabb.area()
+                if ((left.count + right.count) as f32 - TRAVERSE_COST)
+                    * parent.volume.visible_area()
+                    < left.count as f32 * left.volume.visible_area()
+                        + right.count as f32 * right.volume.visible_area()
                 {
                     let start_index = parent.start_index;
 
                     // Merge the leaves
                     nodes[index as usize] = BvhNode {
-                        aabb: parent.aabb,
+                        volume: parent.volume.clone(),
                         count: left.count + right.count,
                         start_index: left.start_index.min(right.start_index),
                     };
@@ -160,19 +162,21 @@ impl<D: Dim, T: Copy + std::fmt::Debug> Bvh<D, T> {
 }
 
 #[cfg(test)]
-use crate::dim2::{Bvh2d, Vec2};
+use crate::dim2::{BvhAabb2d, Vec2};
+#[cfg(test)]
+use bevy_math::bounding::Aabb2d;
 
 #[test]
 fn test_bvh_new() {
     let items = vec![
-        (1, (Vec2::ONE, Vec2::splat(2.))),
-        (2, (Vec2::splat(2.), Vec2::splat(3.))),
-        (3, (Vec2::splat(0.9), Vec2::splat(1.9))),
-        (4, (Vec2::splat(0.2), Vec2::splat(2.2))),
-        (5, (Vec2::ONE, Vec2::splat(5.))),
+        (1, Aabb2d::new(Vec2::ONE, Vec2::splat(2.))),
+        (2, Aabb2d::new(Vec2::splat(2.), Vec2::splat(3.))),
+        (3, Aabb2d::new(Vec2::splat(0.9), Vec2::splat(1.9))),
+        (4, Aabb2d::new(Vec2::splat(0.2), Vec2::splat(2.2))),
+        (5, Aabb2d::new(Vec2::ONE, Vec2::splat(5.))),
     ];
 
-    let bvh = Bvh2d::new(items.len(), items);
+    let bvh = BvhAabb2d::new(items.len(), items);
     // The number of items should match the input
     assert_eq!(bvh.items.len(), 5);
     // Some of the nodes should have gotten merged

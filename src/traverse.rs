@@ -1,8 +1,10 @@
 //! A module with generic logic for traversing the BVH
 
-use crate::{Aabb, Bvh, BvhNode, Dim};
+use crate::{Bvh, BvhNode, BvhVolume};
 
 use std::collections::VecDeque;
+
+use bevy_math::bounding::IntersectsVolume;
 
 /// A stack used when traversing the BVH, you can reuse this to save on an alloc
 #[derive(Default)]
@@ -22,7 +24,7 @@ impl std::ops::DerefMut for Stack {
     }
 }
 
-impl<D: Dim, T: Copy> Bvh<D, T> {
+impl<Volume: BvhVolume, T: Copy> Bvh<Volume, T> {
     /// Create a stack with the right size for the BVH
     pub fn create_stack(&self) -> Stack {
         // TODO: Make sure we use the correct value here
@@ -30,31 +32,30 @@ impl<D: Dim, T: Copy> Bvh<D, T> {
             (self.items.len() as f32).log2().ceil() as usize + 10,
         ))
     }
-}
 
-/// A trait defining an intersection test to traverse the BVH
-pub trait TraverseTest {
-    /// The type of AABB supported by the test
-    type Aabb: Aabb;
+    /// Traverse the BVH with the provided [`IntersectsVolume`] test
+    pub fn traverse<'a, Test: IntersectsVolume<Volume>>(
+        &'a self,
+        stack: &'a mut Stack,
+        tester: Test,
+    ) -> Traverser<'a, Volume, T, Test> {
+        stack.clear();
+        stack.reserve_exact((self.items.len() as f32).log2().ceil() as usize + 10);
+        stack.push_back(0);
 
-    /// The function to test an AABB
-    fn test(&self, aabb: &Self::Aabb) -> bool;
-}
-
-/// A trait with generic getters for ray-based traversal methods
-pub trait RayTest {
-    /// the type of AABB supported by the test
-    type Aabb: Aabb;
-
-    /// Get the origin of the ray
-    fn origin(&self) -> <Self::Aabb as Aabb>::Pos;
-    /// Get the maximum length of the ray
-    fn max(&self) -> f32;
+        Traverser {
+            bvh: self,
+            tester,
+            stack,
+            current_node: None,
+            offset: 0,
+        }
+    }
 }
 
 /// An iterator that traverse the BVH using the provided [`TraverseTest`]
-pub struct Traverser<'a, D: Dim, T: Copy, Test: TraverseTest> {
-    bvh: &'a Bvh<D, T>,
+pub struct Traverser<'a, Volume: BvhVolume, T: Copy, Test: IntersectsVolume<Volume>> {
+    bvh: &'a Bvh<Volume, T>,
     /// The test used in the traverser
     pub tester: Test,
     stack: &'a mut Stack,
@@ -62,8 +63,8 @@ pub struct Traverser<'a, D: Dim, T: Copy, Test: TraverseTest> {
     offset: u32,
 }
 
-impl<'a, D: Dim, T: Copy, Test: TraverseTest<Aabb = D::Aabb>> Iterator
-    for Traverser<'a, D, T, Test>
+impl<'a, Volume: BvhVolume, T: Copy, Test: IntersectsVolume<Volume>> Iterator
+    for Traverser<'a, Volume, T, Test>
 {
     type Item = &'a T;
 
@@ -83,7 +84,7 @@ impl<'a, D: Dim, T: Copy, Test: TraverseTest<Aabb = D::Aabb>> Iterator
         while let Some(index) = self.stack.pop_front() {
             let node = &self.bvh.nodes[index as usize];
 
-            if !self.tester.test(&node.aabb) {
+            if !self.tester.intersects(&node.volume) {
                 continue;
             }
 
@@ -105,33 +106,21 @@ impl<'a, D: Dim, T: Copy, Test: TraverseTest<Aabb = D::Aabb>> Iterator
     }
 }
 
-impl<'a, D: Dim, T: Copy, Test: TraverseTest<Aabb = D::Aabb>> Traverser<'a, D, T, Test> {
+impl<'a, Volume: BvhVolume, T: Copy, Test: IntersectsVolume<Volume>>
+    Traverser<'a, Volume, T, Test>
+{
     #[inline(always)]
-    fn next_item(&mut self, node: &'_ BvhNode<D>) -> Option<&'a T> {
+    fn next_item(&mut self, node: &'_ BvhNode<Volume>) -> Option<&'a T> {
         while self.current_node.is_some() {
             let item = &self.bvh.items[(node.start_index + self.offset) as usize];
             self.offset += 1;
             if self.offset == node.count {
                 self.current_node = None;
             }
-            if self.tester.test(&item.aabb) {
+            if self.tester.intersects(&item.volume) {
                 return Some(&item.t);
             }
         }
         None
-    }
-
-    /// Construct a [`Traverser`]
-    pub fn new(bvh: &'a Bvh<D, T>, stack: &'a mut Stack, tester: Test) -> Self {
-        stack.clear();
-        stack.reserve_exact((bvh.items.len() as f32).log2().ceil() as usize + 1);
-        stack.push_back(0);
-        Self {
-            bvh,
-            tester,
-            stack,
-            current_node: None,
-            offset: 0,
-        }
     }
 }

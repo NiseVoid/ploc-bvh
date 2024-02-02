@@ -1,4 +1,4 @@
-use crate::{Aabb, BvhNode, Dim};
+use crate::{BvhNode, BvhVolume};
 
 const SEARCH_RADIUS: usize = 14;
 
@@ -17,7 +17,11 @@ impl FindCache {
     }
 }
 
-pub fn find_best_node<D: Dim>(cache: &mut FindCache, index: usize, nodes: &[BvhNode<D>]) -> usize {
+pub fn find_best_node<Volume: BvhVolume>(
+    cache: &mut FindCache,
+    index: usize,
+    nodes: &[BvhNode<Volume>],
+) -> usize {
     let mut best_node = index;
     let mut best_area = f32::INFINITY;
 
@@ -30,10 +34,10 @@ pub fn find_best_node<D: Dim>(cache: &mut FindCache, index: usize, nodes: &[BvhN
         }
     }
 
-    let our_aabb = nodes[index].aabb;
+    let our_aabb = &nodes[index].volume;
     let end = index + SEARCH_RADIUS + 1;
     for (other, node) in nodes.iter().enumerate().take(end).skip(index + 1) {
-        let area = our_aabb.merge(&node.aabb).area();
+        let area = our_aabb.merge(&node.volume).visible_area();
         *cache.front(index, other) = area;
         if area < best_area {
             best_node = other;
