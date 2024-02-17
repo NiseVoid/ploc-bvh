@@ -1,6 +1,6 @@
 [package]
 name = "ploc-bvh"
-version = "0.0.1"
+version = "0.1.0"
 description = "A Bounding Volume Hierarchy based on PLOC"
 readme = "README.md"
 keywords = [
@@ -18,7 +18,7 @@ repository = "https://github.com/NiseVoid/ploc-bvh"
 edition = "2021"
 
 [dependencies]
-bevy_math = "0.12"
+bevy_math = "0.13"
 radsort = "0.1"
 
 [profile.release]
@@ -36,6 +36,3 @@ criterion = { version = "0.5", default-features = false, features = [
 [[bench]]
 name = "build"
 harness = false
-
-[patch.crates-io]
-bevy_math = {path = "../bevy/crates/bevy_math"}
