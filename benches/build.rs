@@ -1,13 +1,13 @@
-use ploc_bvh::prelude::Bvh3d;
+use ploc_bvh::prelude::BvhAabb3d;
 
 use std::time::{Duration, Instant};
 
-use bevy_math::Vec3;
+use bevy_math::{bounding::Aabb3d, Vec3};
 use criterion::{criterion_group, criterion_main, Criterion};
 
 const N_BOXES: usize = 1000;
 
-fn generate_boxes() -> Vec<(Vec3, Vec3)> {
+fn generate_boxes() -> Vec<Aabb3d> {
     fastrand::seed(1);
 
     let mut boxes = Vec::with_capacity(N_BOXES);
@@ -18,13 +18,13 @@ fn generate_boxes() -> Vec<(Vec3, Vec3)> {
             fastrand::f32() * 50. - 25.,
         );
 
-        let aabb = Vec3::new(
-            fastrand::f32() * 8. + 2.,
-            fastrand::f32() * 8. + 2.,
-            fastrand::f32() * 8. + 2.,
+        let half_size = Vec3::new(
+            fastrand::f32() * 4. + 1.,
+            fastrand::f32() * 4. + 1.,
+            fastrand::f32() * 4. + 1.,
         );
 
-        boxes.push((aabb / -2. + pos, aabb / 2. + pos));
+        boxes.push(Aabb3d::new(pos, half_size));
     }
 
     boxes
@@ -37,7 +37,7 @@ fn build(c: &mut Criterion) {
             let mut elapsed = Duration::ZERO;
             for _ in 0..iter {
                 let start = Instant::now();
-                let bvh = Bvh3d::new(
+                let bvh = BvhAabb3d::new(
                     boxes.len(),
                     boxes.iter().enumerate().map(|(i, aabb)| (i as u32, *aabb)),
                 );
