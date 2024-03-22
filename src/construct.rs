@@ -17,17 +17,22 @@ impl<Volume: BvhVolume, T: Copy + std::fmt::Debug> Bvh<Volume, T> {
 
         for (i, (t, volume)) in iter.into_iter().enumerate() {
             let volume = volume.into();
-            current_nodes.push(BvhNode {
-                volume: volume.clone(),
-                count: 1,
-                start_index: i as u32,
-            });
+            current_nodes.push((
+                BvhNode {
+                    volume: volume.clone(),
+                    count: 1,
+                    start_index: i as u32,
+                },
+                volume.morton_code(),
+            ));
             items.push(BvhItem { volume, t });
         }
 
-        radsort::sort_by_cached_key(&mut current_nodes, |node: &BvhNode<Volume>| {
-            node.volume.morton_code()
-        });
+        radsort::sort_by_key(&mut current_nodes, |(_, code)| *code);
+        let mut current_nodes = current_nodes
+            .drain(..)
+            .map(|(node, _)| node)
+            .collect::<Vec<_>>();
 
         let mut nodes = vec![
             BvhNode {
@@ -65,8 +70,8 @@ impl<Volume: BvhVolume, T: Copy + std::fmt::Debug> Bvh<Volume, T> {
                 let parent_aabb = left.volume.merge(&right.volume);
 
                 insert_index -= 2;
-                nodes[insert_index] = current_nodes[index].clone();
-                nodes[insert_index + 1] = current_nodes[*best].clone();
+                nodes[insert_index] = left.clone();
+                nodes[insert_index + 1] = right.clone();
                 next_nodes.push(BvhNode {
                     volume: parent_aabb,
                     count: 0,
