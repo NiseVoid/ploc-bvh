@@ -3,6 +3,12 @@
 A Bounding Volume Hierarchy based on PLOC.
 Inspired by [a series of articles by Arsène Pérard-Gayot](https://madmann91.github.io/)
 
+This bounding volume uses the `BoundingVolume` and `IntersectsVolume` traits from bevy_math for most of its functionality.
+Since bevy_math doesn't depend on the rest of the bevy engine, this means it can be used in other projects too.
+
+A BVH can be constructed using any type that implements `BoundingVolumes`, but some aliases are provided for bevy_math's built-in types, these can be found in the prelude or the dim2/dim3 modules.
+The BVH can be traversed using any type that implements `IntersectsVolume`, bevy_math provides methods for overlap between built-in volumes, ray casting, and casting volumes.
+
 ## Getting started
 
 Creating and traversing the BVH is all done using Iterators.
