@@ -18,7 +18,7 @@ repository = "https://github.com/NiseVoid/ploc-bvh"
 edition = "2021"
 
 [dependencies]
-bevy_math = "0.13"
+bevy_math = { version = "0.13", default-features = false }
 radsort = "0.1"
 
 [profile.release]
