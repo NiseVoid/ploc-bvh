@@ -53,7 +53,7 @@ impl<Volume: BvhVolume, T: Copy> Bvh<Volume, T> {
     }
 }
 
-/// An iterator that traverse the BVH using the provided [`TraverseTest`]
+/// An iterator that traverse the BVH using the provided [`IntersectsVolume`] test
 pub struct Traverser<'a, Volume: BvhVolume, T: Copy, Test: IntersectsVolume<Volume>> {
     bvh: &'a Bvh<Volume, T>,
     /// The test used in the traverser

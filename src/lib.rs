@@ -1,6 +1,4 @@
-//! A Bounding Volume Hierarchy based on PLOC.
-//! Inspired by a series of articles on https://madmann91.github.io/
-
+#![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 
 mod morton;
@@ -10,7 +8,7 @@ pub mod dim2;
 pub mod dim3;
 
 /// A generic bounding volume supported by the BVH. Adds a few extra methods on top of bevy's
-/// [`BoundingVolume`] trait
+/// [`BoundingVolume`](bevy_math::bounding::BoundingVolume) trait
 pub trait BvhVolume: bevy_math::bounding::BoundingVolume + Clone + Debug {
     /// An infinite bounding volume at the zero position
     const INFINITY: Self;
