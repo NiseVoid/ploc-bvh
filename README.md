@@ -1,4 +1,4 @@
-# ploc-bhv
+# ploc-bvh
 
 A Bounding Volume Hierarchy based on PLOC.
 Inspired by [a series of articles by Arsène Pérard-Gayot](https://madmann91.github.io/)
