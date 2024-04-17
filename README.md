@@ -3,15 +3,15 @@
 A Bounding Volume Hierarchy based on PLOC.
 Inspired by [a series of articles by Arsène Pérard-Gayot](https://madmann91.github.io/)
 
-This bounding volume uses the `BoundingVolume` and `IntersectsVolume` traits from bevy_math for most of its functionality.
-Since bevy_math doesn't depend on the rest of the bevy engine, this means it can be used in other projects too.
+This crate uses the `BoundingVolume` and `IntersectsVolume` traits from `bevy_math` for most of its functionality.
+Since `bevy_math` does not depend on the rest of the bevy engine, it can be used in non-bevy projects too.
 
-A BVH can be constructed using any type that implements `BoundingVolumes`, but some aliases are provided for bevy_math's built-in types, these can be found in the prelude or the dim2/dim3 modules.
-The BVH can be traversed using any type that implements `IntersectsVolume`, bevy_math provides methods for overlap between built-in volumes, ray casting, and casting volumes.
+A BVH can be constructed using any type that implements `bevy_math`'s `BoundingVolumes` and this crate's `BvhVolume`, some type aliases are provided for `bevy_math`'s built-in types, these can be found in the `prelude` or the `dim2`/`dim3` modules.
+The BVH can be traversed using any type that implements `bevy_math`'s `IntersectsVolume`, some types for this are provided by `bevy_math`, including for overlap between built-in volumes, ray casting, and casting volumes.
 
 ## Getting started
 
-Creating and traversing the BVH is all done using Iterators.
+Creating and traversing the BVH can be entirely done using `Iterator`s.
 
 In this example we create AABBs for a few boxes, and use their index as the key, then travese the BVH:
 ```rust
@@ -29,6 +29,7 @@ let boxes = [
 // and maybe some information to filter results quickly.
 let bvh = BvhAabb3d::new(
     boxes.len(),
+    // We use the index of the box as our T here, so we can find it later
     boxes.iter().enumerate().map(|(i, aabb)| (i, *aabb)),
 );
 
