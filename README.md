@@ -16,7 +16,7 @@ Creating and traversing the BVH can be entirely done using `Iterator`s.
 In this example we create AABBs for a few boxes, and use their index as the key, then travese the BVH:
 ```rust
 # use ploc_bvh::prelude::*;
-use bevy_math::{bounding::{Aabb3d, RayCast3d}, prelude::{Direction3d, Vec3}};
+use bevy_math::{bounding::{Aabb3d, RayCast3d}, prelude::{Dir3, Vec3}};
 
 // We have some list of axis-aligned bounding boxes
 let boxes = [
@@ -40,7 +40,7 @@ let mut stack = bvh.create_stack();
 
 // We construct a bounding volume intersection test, a raycast in this case
 let origin = Vec3::ZERO;
-let direction = Direction3d::Y;
+let direction = Dir3::Y;
 let max_time_of_impact = 1.;
 let ray_cast = RayCast3d::new(origin, direction, max_time_of_impact);
 

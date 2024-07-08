@@ -5,7 +5,7 @@ use crate::{Bvh, BvhVolume};
 
 pub use bevy_math::{
     bounding::{Aabb3d, BoundingSphere, BoundingVolume},
-    Vec3,
+    Vec3A,
 };
 
 /// A BVH using [`Aabb3d`] volumes
@@ -16,8 +16,8 @@ pub type BvhSphere<T> = Bvh<BoundingSphere, T>;
 
 impl BvhVolume for Aabb3d {
     const INFINITY: Self = Self {
-        min: Vec3::splat(-f32::INFINITY),
-        max: Vec3::splat(f32::INFINITY),
+        min: Vec3A::splat(-f32::INFINITY),
+        max: Vec3A::splat(f32::INFINITY),
     };
 
     #[inline(always)]
@@ -34,7 +34,7 @@ impl BvhVolume for Aabb3d {
 
 impl BvhVolume for BoundingSphere {
     const INFINITY: Self = Self {
-        center: Vec3::ZERO,
+        center: Vec3A::ZERO,
         sphere: bevy_math::primitives::Sphere {
             radius: f32::INFINITY,
         },
