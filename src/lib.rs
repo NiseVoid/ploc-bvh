@@ -34,7 +34,7 @@ impl<Volume: BvhVolume, T: Copy> Default for Bvh<Volume, T> {
 
 impl<Volume: BvhVolume, T: Copy> Bvh<Volume, T> {
     /// Get the number of nodes in the BVH. The number of nodes is somewhere between
-    /// the number of items (n) and n^2 - 1
+    /// the number of items (n) and 2n - 1
     pub fn n_nodes(&self) -> usize {
         self.nodes.len()
     }
@@ -42,6 +42,16 @@ impl<Volume: BvhVolume, T: Copy> Bvh<Volume, T> {
     /// Get the number of items in the BVH
     pub fn n_items(&self) -> usize {
         self.items.len()
+    }
+
+    /// Get an iterator over the BVH's nodes
+    pub fn nodes(&self) -> impl Iterator<Item = &BvhNode<Volume>> {
+        self.nodes.iter()
+    }
+
+    /// Get an iterator over the BVH's items
+    pub fn items(&self) -> impl Iterator<Item = &BvhItem<Volume, T>> {
+        self.items.iter()
     }
 }
 
@@ -61,14 +71,19 @@ use std::fmt::Debug;
 /// A node on the BVH
 #[derive(Clone, Copy, Debug)]
 pub struct BvhNode<Volume: BvhVolume> {
-    volume: Volume,
-    count: u32,
-    start_index: u32,
+    /// The volume of the node
+    pub volume: Volume,
+    /// The number of leaves. 0 if the node points to other nodes
+    pub count: u32,
+    /// The start index of the leaves. If count is 0 this points to other nodes
+    pub start_index: u32,
 }
 
 /// An item in the BHV
 #[derive(Clone, Copy, Debug)]
 pub struct BvhItem<Volume: BvhVolume, T: Copy> {
-    volume: Volume,
-    t: T,
+    /// The volume of the item
+    pub volume: Volume,
+    /// The value of the bvh item
+    pub t: T,
 }

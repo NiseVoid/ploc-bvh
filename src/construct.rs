@@ -7,13 +7,13 @@ const TRAVERSE_COST: f32 = 1.5;
 
 impl<Volume: BvhVolume, T: Copy + std::fmt::Debug> Bvh<Volume, T> {
     /// Construct a BVH from a size and iterator
-    pub fn new(n: usize, iter: impl IntoIterator<Item = (T, impl Into<Volume>)>) -> Self {
-        if n == 0 {
+    pub fn new(max_items: usize, iter: impl IntoIterator<Item = (T, impl Into<Volume>)>) -> Self {
+        if max_items == 0 {
             return Self::default();
         }
 
-        let mut current_nodes = Vec::with_capacity(n);
-        let mut items = Vec::with_capacity(n);
+        let mut current_nodes = Vec::with_capacity(max_items);
+        let mut items = Vec::with_capacity(max_items);
 
         for (i, (t, volume)) in iter.into_iter().enumerate() {
             let volume = volume.into();
@@ -27,6 +27,7 @@ impl<Volume: BvhVolume, T: Copy + std::fmt::Debug> Bvh<Volume, T> {
             ));
             items.push(BvhItem { volume, t });
         }
+        let n_items = items.len();
 
         radsort::sort_by_key(&mut current_nodes, |(_, code)| *code);
         let mut current_nodes = current_nodes
@@ -40,12 +41,12 @@ impl<Volume: BvhVolume, T: Copy + std::fmt::Debug> Bvh<Volume, T> {
                 count: 0,
                 start_index: u32::MAX,
             };
-            2 * n - 1
+            2 * n_items - 1
         ];
         let mut insert_index = nodes.capacity();
 
-        let mut next_nodes = Vec::with_capacity(n);
-        let mut merge = Vec::with_capacity(n);
+        let mut next_nodes = Vec::with_capacity(n_items);
+        let mut merge = Vec::with_capacity(n_items);
 
         let mut find_cache = FindCache::default();
         // Create parent nodes for the best combinations of nodes until we have just 1 parent node
@@ -87,13 +88,12 @@ impl<Volume: BvhVolume, T: Copy + std::fmt::Debug> Bvh<Volume, T> {
         insert_index -= 1;
         nodes[insert_index] = current_nodes[0].clone();
 
-        // TODO: We shouldn't make a new vec of this yet
-        let mut nodes = nodes[insert_index..].to_vec();
+        debug_assert_eq!(insert_index, 0);
 
         // Order the list of items to match the nodes
         let unordered_items = items;
-        let mut items = Vec::with_capacity(n);
-        let mut stack = VecDeque::with_capacity((n as f32).log2().ceil() as usize + 10);
+        let mut items = Vec::with_capacity(n_items);
+        let mut stack = VecDeque::with_capacity((n_items as f32).log2().ceil() as usize + 10);
         stack.push_back(0u32);
         while let Some(index) = stack.pop_front() {
             let node = &mut nodes[index as usize];
