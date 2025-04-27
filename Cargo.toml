@@ -1,6 +1,6 @@
 [package]
 name = "ploc-bvh"
-version = "0.3.0"
+version = "0.4.0"
 description = "A Bounding Volume Hierarchy based on PLOC"
 readme = "README.md"
 keywords = [
@@ -15,10 +15,10 @@ categories = ["data-structures", "game-development"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/NiseVoid/ploc-bvh"
 
-edition = "2021"
+edition = "2024"
 
 [dependencies]
-bevy_math = { version = "0.15.0", default-features = false }
+bevy_math = { version = "0.16.0", default-features = false, features=["nostd-libm"] }
 radsort = "0.1"
 
 [profile.release]
@@ -28,7 +28,8 @@ strip = true
 panic = "abort"
 
 [dev-dependencies]
-fastrand = "1.9"
+bevy_math = { version = "0.16.0", default-features = false, features = ["std"] }
+fastrand = "2.3"
 criterion = { version = "0.5", default-features = false, features = [
   "cargo_bench_support",
 ] }
